@@ -1,7 +1,7 @@
 {
   "name": "Command.io",
-  "version": "1.0.0",
-  "description": "Custom Command Bot",
+  "version": "1.1.0",
+  "description": "Custom bot that plays local music files.",
   "main": "bot.js",
   "author": "Payton Urry",
   "dependencies": {
