@@ -1,0 +1,13 @@
+{
+  "name": "Command.io",
+  "version": "1.0.0",
+  "description": "Custom Command Bot",
+  "main": "bot.js",
+  "author": "Payton Urry",
+  "dependencies": {
+    "@discordjs/opus": "^0.3.3",
+    "discord.js": "^12.2.0",
+    "ffmpeg-static": "^4.2.7",
+    "winston": "^3.3.3"
+  }
+}
