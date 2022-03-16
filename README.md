@@ -6,7 +6,8 @@ A simple Discord bot, built using JavaScript and Node.js, to play local music fi
 `!join`
 Tells Command.io bot to join the voice channel you are currently in.
 ### Leave
-`!leave``!disconnect`
+`!leave`
+`!disconnect`
 Tells Command.io to leave the voice channel it is currently in. Also aliased `disconnect` to do the same thing.
 ### Play
 `!play File.mp3`
