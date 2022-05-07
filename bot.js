@@ -4,6 +4,7 @@ var Discord = require('discord.js');
 var http = require('http');
 var logger = require('winston');
 var auth = require('./auth.json');
+var fs = require('fs');
 
 // Configure logger settings
 logger.remove(logger.transports.Console);
@@ -19,8 +20,6 @@ const client = new Discord.Client();
 // https://nodejs.org/en/knowledge/HTTP/clients/how-to-create-a-HTTP-request/
 // https://nodejs.org/api/http.html
 
-<<<<<<< Updated upstream
-=======
 /*
 	Potential Roadmap Features:
 		1. *DONE* Accepting a directory path and adding all tracks in the given directory (and recursively sub directories).
@@ -41,7 +40,6 @@ const client = new Discord.Client();
 			- Research DNDBeyond API and its accessibility.
 */
 
->>>>>>> Stashed changes
 // Global Vars
 var isReady = true;
 var trackQueue = [];
@@ -127,6 +125,25 @@ client.on('message', message => {
 			isReady = true;
 		}
 		
+		/*
+			Play a given track / add a track to the queue
+			NOTE: Will not play tracks with quotation marks in the middle of the given title.
+				  Only accepts tracks in the immediate folder or sub-folders, as so:
+				  
+				  !play file_name.mp3
+				  !play "name_with_spaces.mp3"
+				  !play "Sub Folder\some track name.mp3"
+		*/
+		if (command === 'play') {
+			isReady = false;
+			if (args.length > 0) {
+				parseTrackArgs(args, message);
+			} else {
+				message.channel.send('No track given!');
+			}
+			isReady = true;
+		}
+		
 		// Pause the StreamDispatcher
 		if (command === 'pause') {
 			isReady = false;
@@ -189,47 +206,6 @@ client.on('message', message => {
 			isReady = true;
 		}
 		
-<<<<<<< Updated upstream
-		/*
-			Play a given track / add a track to the queue
-			NOTE: Will not play tracks with quotation marks in the middle of the given title.
-				  To play a track in a SUBFOLDER:
-				  
-				  !play "Sub Folder/track name in files.mp3"
-		*/
-		if (command === 'play') {
-			isReady = false;
-			if (args.length > 0) {
-				let track = args[0];
-				// Check if this is a nested filepath with quotations
-				if (args[0].search('"') !== -1) {
-					// Build the full filepath
-					let filePath = '';
-					args.forEach(
-						(arg) => {
-							let quoteIdx = arg.search('"');
-							if (quoteIdx == 0) {
-								// Remove the first quotation mark
-								let fixedArg = arg.substring(quoteIdx + 1) + ' ';
-								filePath += fixedArg;
-							} else if (quoteIdx !== -1) {
-								// Remove the last quotation mark
-								let fixedArg = arg.slice(0, -1);
-								filePath += fixedArg;
-							} else {
-								// Add anything inbetween
-								filePath += arg + ' ';
-							}
-						})
-						track = filePath;
-				}
-				// Play it or add it to the queue
-				playOrAddTrack('./' + track, message);
-			} else {
-				message.channel.send('No track given!');
-			}
-			isReady = true;
-=======
 		// Output playlist and according flags
 		if (command === 'status') {
 			isReady = false
@@ -340,7 +316,6 @@ client.on('message', message => {
 			isReady = false
 			rollDice(1, 20, message)
 			isReady = true
->>>>>>> Stashed changes
 		}
 		
 		// Set the volume to given floating point number
@@ -469,14 +444,92 @@ function rollDice(num, die, message) {
 }
 
 /*
+	Name: parseTrackArgs
+	Description: Parse the arguments for the track name
+	Params:
+		args: array, given array of arguments. Typically means a file path with spaces
+		message: object, the DiscordJS message object
+*/
+function parseTrackArgs(args, message) {
+	// Set track to the first arg
+	let track = args[0];
+	let filePath = track;
+	
+	// Check if this is a filepath with quotations
+	if (args[0].search('"') !== -1) {
+		// Build the full filepath
+		filePath = '';
+		args.forEach(
+			(arg) => {
+				let quoteIdx = arg.search('"');
+				if (quoteIdx == 0) {
+					// Remove the first quotation mark
+					let fixedArg = arg.substring(quoteIdx + 1) + ' ';
+					filePath += fixedArg;
+				} else if (quoteIdx !== -1) {
+					// Remove the last quotation mark
+					let fixedArg = arg.slice(0, -1);
+					filePath += fixedArg;
+				} else {
+					// Add anything inbetween
+					filePath += arg + ' ';
+				}
+		})
+		track = filePath;
+	}
+	
+	// Use the filesystem to check if this is a file or a directory
+	let fileInfo = fs.lstatSync(track);
+	if (fileInfo.isFile()) {
+		// Play it or add it to the queue
+		playOrAddTrack('./' + track, message);
+	} else if (fileInfo.isDirectory()) {
+		// Recursively access the directory to grab all files and add them to the queue
+		recursivelyAddAllTracksInDirectory(track, message);
+	}
+}
+
+/*
+	Name: recursivelyAddAllTracksInDirectory
+	Description: Take in a directory path and add all tracks to the queue from this folder and subfolders
+				 NOTE: Will only bulk add MP3 files (for safety)
+	Params:
+		dirPath: string, the directory path
+		message: object, the DiscordJS message object
+*/
+async function recursivelyAddAllTracksInDirectory(dirPath, message) {
+	// Get all folders and files in dirPath
+	const files = await fs.promises.readdir(dirPath);
+	
+	for(const file of files) {
+		let path = dirPath + "\\" + file;
+		let fileStat = fs.lstatSync(path);
+		
+		// Check for file or folder
+		if (fileStat.isFile()) {
+			// Check the file extension
+			let fileExt = path.split(".").pop();
+			if (fileExt == "mp3") {
+				// Add it to the queue
+				playOrAddTrack(path, message, true);
+			}
+		} else if (fileStat.isDirectory()) {
+			// Go into the directory
+			recursivelyAddAllTracksInDirectory(path, message);
+		}
+	}
+}
+
+/*
 	Name: playOrAddTrack
 	Description: If nothing is currently playing, plays the given file.
 				 Otherwise, add the given file to the queue to be played after.
 	Params: 
 		trackTitle: string, the fully qualified location of the given track to be played
 		message: object, the given message object from Discord
+		bulkAdd: boolean, flag to send a message about songs added to the queue if we're not bulk adding
 */
-function playOrAddTrack(trackTitle, message) {
+function playOrAddTrack(trackTitle, message, bulkAdd = false) {
 	if (channelConnection) {
 		// Determine if we are already have a queue
 		if (trackQueue.length === 0) {
@@ -497,7 +550,10 @@ function playOrAddTrack(trackTitle, message) {
 		} else {
 			// Add it to the queue to be played later
 			trackQueue.push(trackTitle);
-			message.channel.send('Added to the queue: ' + trackTitle);
+			if (!bulkAdd) {
+				// Only send the message to the channel if we're not bulk adding songs
+				message.channel.send('Added to the queue: ' + trackTitle);
+			}
 		}
 	}
 }
@@ -519,7 +575,7 @@ function loopSong() {
 	Name: nextInQueue
 	Description: Moves the needle to the next track in queue.
 				 If we are looping the queue, this handles resetting to the first track.
-				 If we aren't looping the queue, this handles resetting it once the queue reaches the end.
+				 If we aren't looping the queue, this handles emptying it once the queue reaches the end.
 */
 function nextInQueue() {
 	// Move to the next track in the queue
@@ -561,7 +617,7 @@ function nextInQueue() {
 /*
 	Name: setBotPresence
 	Description: Set the bot's visual presence in Discord.
-				The two options are:
+				 The two options are:
 					Do Not Disturb, PLAYING - fileName
 					Available, no activity
 	
