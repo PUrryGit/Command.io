@@ -23,10 +23,21 @@ const client = new Discord.Client();
 /*
 	Potential Roadmap Features:
 		1. *DONE* Accepting a directory path and adding all tracks in the given directory (and recursively sub directories).
-		2. A dice roller. Commands for dice in a given DND set (1d4, 1d6, 1d8, 1d10, 1d12, 1d20) and then a custom command given # of dice with N sides.
-		3. Command to display the current playlist and parameters (isLoopingSong, isLoopingQueue, volume).
-		4. Random flag for playing random songs in the playlist.
+		2. *DONE* A dice roller. Commands for dice in a given DND set (1d4, 1d6, 1d8, 1d10, 1d12, 1d20) as (!rd4, !rd6, etc.),
+						 and then a custom command given # of dice with N sides (!roll #dN).
+			- *DONE* Get inclusive random number generation.
+			- *DONE* Set up new commands for a common DND set of dice.
+			- *DONE* Set up a new command for rolling custom dice.
+		3. *DONE* Command to display the current playlist and parameters (isLoopingSong, isLoopingQueue, volume).
+			- *DONE* Set up a new command.
+			- *DONE* Add function to build a message showcasing the entire playlist.
+			- *DONE*  Add the given flags to the message underneath the playlist.
+		4. Shuffle flag to play songs randomly in the playlist.
+			- Set up a new command.
+			- Add interrupt into the listeners that decide which song next.
+			- Figure out some way to use inclusive random number generation to decide new songs.
 		5. Ability to get character sheets from DNDBeyond API (if the API is freely accessible with decent documentation...).
+			- Research DNDBeyond API and its accessibility.
 */
 
 // Global Vars
@@ -164,8 +175,7 @@ client.on('message', message => {
 		if (command === 'loopsong') {
 			isReady = false;
 			if (voiceDispatcher && !isLoopingSong) {
-				// Remove the queue listener and clear the queue
-				trackQueue = [];
+				// Remove the queue listener
 				voiceDispatcher.removeListener('finish', nextInQueue);
 				// Give the dispatcher a listener that loops
 				voiceDispatcher.on('finish', loopSong);
@@ -194,6 +204,119 @@ client.on('message', message => {
 				isLoopingQueue = false
 			}
 			isReady = true;
+		}
+		
+
+		// Output playlist and according flags
+		if (command === 'status') {
+			isReady = false
+			
+			// Display flags and volume
+			loopSongMsg = isLoopingSong ? ':repeat_one:' : ':x:'
+			loopQueueMsg = isLoopingQueue ? ':repeat:' : ':x:'
+			readableVol = (currentVolume * 100) + '%'
+			statusMsg = 'Looping Song: ' + loopSongMsg + '    Looping Playlist: ' + loopQueueMsg + '    Volume: ' + readableVol
+			
+			// Display current song
+			currentTrackMsg = currentTrack ? currentTrack : 'Nothing!'
+			statusMsg += '\nCurrent Song: ' + currentTrackMsg
+			
+			// Display playlist, if there is one
+			if (trackQueue.length > 1) {
+				statusMsg += '\n\nPlaylist:\n'
+				for(let i = 0; i < trackQueue.length; i++) {
+					let songNum = i + 1
+					let songNameArr = trackQueue[i].split('\\')
+					let songName = songNameArr[songNameArr.length - 1]
+					let currentSong = currentPlaceInQueue === i
+						? isLoopingSong
+							? ' :repeat_one:'
+							: ' :arrow_forward:'
+						: ''
+					statusMsg += songNum + '. ' + songName + currentSong + '\n' 
+				}
+			}
+			
+			message.channel.send(statusMsg)
+			isReady = true
+		}
+		
+		// Roll a custom amount of custom dice
+		if (command === 'roll' || command === 'r') {
+			isReady = false
+			
+			if (args.length > 0) {
+				// Get number of dice, and kind of dice, to roll
+				let argArr = args[0].split('d')
+				if (argArr.length === 2) {
+					let num = Number(argArr[0])
+					let die = Number(argArr[1])
+					
+					if (Number.isInteger(num) && Number.isInteger(die)) {
+						num = Math.abs(num)
+						die = Math.abs(die)
+						let tooMany = num > 100
+						let tooLarge = die > 1000
+						
+						if (tooMany) {
+							message.channel.send('Number of dice must be less than 100!')
+						}
+						
+						if (tooLarge) {
+							message.channel.send('Largest dice allowed is d1000!')
+						}
+						
+						if (!tooMany && !tooLarge) {
+							rollDice(num, die, message)
+						}
+					} else {
+						message.channel.send('One or more invalid numbers! Format: "!roll 1d6"')
+					}
+				} else {
+					message.channel.send('Incorrect format! Format: "!roll 1d6"')
+				}
+			} else {
+				message.channel.send('No die given! Format: "!roll 1d6"')
+			}
+			
+			isReady = true
+		}
+		
+		// SET ROLL COMMANDS
+		if (command === 'rd4') {
+			isReady = false
+			rollDice(1, 4, message)
+			isReady = true
+		}
+		
+		if (command === 'rd6') {
+			isReady = false
+			rollDice(1, 6, message)
+			isReady = true
+		}
+		
+		if (command === 'rd8') {
+			isReady = false
+			rollDice(1, 8, message)
+			isReady = true
+		}
+		
+		if (command === 'rd10') {
+			isReady = false
+			rollDice(1, 10, message)
+			isReady = true
+		}
+		
+		if (command === 'rd12') {
+			isReady = false
+			rollDice(1, 12, message)
+			isReady = true
+		}
+		
+		if (command === 'rd20') {
+			isReady = false
+			rollDice(1, 20, message)
+			isReady = true
 		}
 		
 		// Set the volume to given floating point number
@@ -287,6 +410,116 @@ client.on('message', message => {
 		logger.info(ex.message)
 	}
 });
+
+function rollDice(num, die, message) {
+	let total = 0;
+	let totalArr = [];
+					
+	// Roll the dice!
+	for (let i = 0; i < num; i++) {
+		let numRolled = getRandomIntInclusive(1, die)
+		total += numRolled
+		totalArr.push(numRolled)
+	}
+					
+	// Print total rolled and individual rolls
+	let rollMsg = '__Rolled :game_die: ' + num + 'd' + die + '__\nTotal: :crossed_swords:[ ' + total + ' ]:crossed_swords:\nDice Rolled: [ '
+	for (let i = 0; i < totalArr.length; i++) {
+		if (totalArr[i] === 1) {
+			rollMsg += ':small_red_triangle_down: __*' + totalArr[i] + '*__'
+		} else if (totalArr[i] === die) {
+			rollMsg += ':small_blue_diamond: __*' + totalArr[i] + '*__'
+		} else {
+			rollMsg += totalArr[i]
+		}
+						
+		if (i !== totalArr.length - 1) {
+			rollMsg += ' ,  '
+		} else {
+			rollMsg += ' '
+		}
+	}
+					
+	rollMsg += ']'
+	message.channel.send(rollMsg)
+}
+
+/*
+	Name: parseTrackArgs
+	Description: Parse the arguments for the track name
+	Params:
+		args: array, given array of arguments. Typically means a file path with spaces
+		message: object, the DiscordJS message object
+*/
+function parseTrackArgs(args, message) {
+	// Set track to the first arg
+	let track = args[0];
+	let filePath = track;
+	
+	// Check if this is a filepath with quotations
+	if (args[0].search('"') !== -1) {
+		// Build the full filepath
+		filePath = '';
+		args.forEach(
+			(arg) => {
+				let quoteIdx = arg.search('"');
+				if (quoteIdx == 0) {
+					// Remove the first quotation mark
+					let fixedArg = arg.substring(quoteIdx + 1) + ' ';
+					filePath += fixedArg;
+				} else if (quoteIdx !== -1) {
+					// Remove the last quotation mark
+					let fixedArg = arg.slice(0, -1);
+					filePath += fixedArg;
+				} else {
+					// Add anything inbetween
+					filePath += arg + ' ';
+				}
+		})
+		track = filePath;
+	}
+	
+	// Use the filesystem to check if this is a file or a directory
+	let fileInfo = fs.lstatSync(track);
+	if (fileInfo.isFile()) {
+		// Play it or add it to the queue
+		playOrAddTrack('./' + track, message);
+	} else if (fileInfo.isDirectory()) {
+		// Recursively access the directory to grab all files and add them to the queue
+		recursivelyAddAllTracksInDirectory(track, message);
+	}
+}
+
+/*
+	Name: recursivelyAddAllTracksInDirectory
+	Description: Take in a directory path and add all tracks to the queue from this folder and subfolders
+				 NOTE: Will only bulk add MP3 files (for safety)
+	Params:
+		dirPath: string, the directory path
+		message: object, the DiscordJS message object
+*/
+async function recursivelyAddAllTracksInDirectory(dirPath, message) {
+	// Get all folders and files in dirPath
+	const files = await fs.promises.readdir(dirPath);
+	
+	for(const file of files) {
+		let path = dirPath + "\\" + file;
+		let fileStat = fs.lstatSync(path);
+		
+		// Check for file or folder
+		if (fileStat.isFile()) {
+			// Check the file extension
+			let fileExt = path.split(".").pop();
+			if (fileExt == "mp3") {
+				// Add it to the queue
+				playOrAddTrack(path, message, true);
+			}
+		} else if (fileStat.isDirectory()) {
+			// Go into the directory
+			recursivelyAddAllTracksInDirectory(path, message);
+		}
+	}
+}
 
 /*
 	Name: parseTrackArgs
@@ -494,6 +727,22 @@ function setBotPresence(activityType = null, fileName = "") {
 */
 function isFloat(n){
     return Number(n) === n && n % 1 !== 0;
+}
+
+/*
+	Name: getRandomIntInclusive
+	Description: Found in Mozilla JS docs, gets a random
+				 integer between two values while being
+				 inclusive at both ends.
+	
+	Params:
+		min: The minimum value to be randomized, inclusive
+		max: The maximum value to be randomized, inclusive
+*/
+function getRandomIntInclusive(min, max) {
+  min = Math.ceil(min);
+  max = Math.floor(max);
+  return Math.floor(Math.random() * (max - min + 1) + min); //The maximum is inclusive and the minimum is inclusive
 }
 
 // Start the bot by authorizing it with the token saved in auth
