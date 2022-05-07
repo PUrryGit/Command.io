@@ -206,6 +206,7 @@ client.on('message', message => {
 			isReady = true;
 		}
 		
+
 		// Output playlist and according flags
 		if (command === 'status') {
 			isReady = false
@@ -441,6 +442,83 @@ function rollDice(num, die, message) {
 					
 	rollMsg += ']'
 	message.channel.send(rollMsg)
+}
+
+/*
+	Name: parseTrackArgs
+	Description: Parse the arguments for the track name
+	Params:
+		args: array, given array of arguments. Typically means a file path with spaces
+		message: object, the DiscordJS message object
+*/
+function parseTrackArgs(args, message) {
+	// Set track to the first arg
+	let track = args[0];
+	let filePath = track;
+	
+	// Check if this is a filepath with quotations
+	if (args[0].search('"') !== -1) {
+		// Build the full filepath
+		filePath = '';
+		args.forEach(
+			(arg) => {
+				let quoteIdx = arg.search('"');
+				if (quoteIdx == 0) {
+					// Remove the first quotation mark
+					let fixedArg = arg.substring(quoteIdx + 1) + ' ';
+					filePath += fixedArg;
+				} else if (quoteIdx !== -1) {
+					// Remove the last quotation mark
+					let fixedArg = arg.slice(0, -1);
+					filePath += fixedArg;
+				} else {
+					// Add anything inbetween
+					filePath += arg + ' ';
+				}
+		})
+		track = filePath;
+	}
+	
+	// Use the filesystem to check if this is a file or a directory
+	let fileInfo = fs.lstatSync(track);
+	if (fileInfo.isFile()) {
+		// Play it or add it to the queue
+		playOrAddTrack('./' + track, message);
+	} else if (fileInfo.isDirectory()) {
+		// Recursively access the directory to grab all files and add them to the queue
+		recursivelyAddAllTracksInDirectory(track, message);
+	}
+}
+
+/*
+	Name: recursivelyAddAllTracksInDirectory
+	Description: Take in a directory path and add all tracks to the queue from this folder and subfolders
+				 NOTE: Will only bulk add MP3 files (for safety)
+	Params:
+		dirPath: string, the directory path
+		message: object, the DiscordJS message object
+*/
+async function recursivelyAddAllTracksInDirectory(dirPath, message) {
+	// Get all folders and files in dirPath
+	const files = await fs.promises.readdir(dirPath);
+	
+	for(const file of files) {
+		let path = dirPath + "\\" + file;
+		let fileStat = fs.lstatSync(path);
+		
+		// Check for file or folder
+		if (fileStat.isFile()) {
+			// Check the file extension
+			let fileExt = path.split(".").pop();
+			if (fileExt == "mp3") {
+				// Add it to the queue
+				playOrAddTrack(path, message, true);
+			}
+		} else if (fileStat.isDirectory()) {
+			// Go into the directory
+			recursivelyAddAllTracksInDirectory(path, message);
+		}
+	}
 }
 
 /*
