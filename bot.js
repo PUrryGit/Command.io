@@ -19,6 +19,29 @@ const client = new Discord.Client();
 // https://nodejs.org/en/knowledge/HTTP/clients/how-to-create-a-HTTP-request/
 // https://nodejs.org/api/http.html
 
+<<<<<<< Updated upstream
+=======
+/*
+	Potential Roadmap Features:
+		1. *DONE* Accepting a directory path and adding all tracks in the given directory (and recursively sub directories).
+		2. *DONE* A dice roller. Commands for dice in a given DND set (1d4, 1d6, 1d8, 1d10, 1d12, 1d20) as (!rd4, !rd6, etc.),
+						 and then a custom command given # of dice with N sides (!roll #dN).
+			- *DONE* Get inclusive random number generation.
+			- *DONE* Set up new commands for a common DND set of dice.
+			- *DONE* Set up a new command for rolling custom dice.
+		3. *DONE* Command to display the current playlist and parameters (isLoopingSong, isLoopingQueue, volume).
+			- *DONE* Set up a new command.
+			- *DONE* Add function to build a message showcasing the entire playlist.
+			- *DONE*  Add the given flags to the message underneath the playlist.
+		4. Shuffle flag to play songs randomly in the playlist.
+			- Set up a new command.
+			- Add interrupt into the listeners that decide which song next.
+			- Figure out some way to use inclusive random number generation to decide new songs.
+		5. Ability to get character sheets from DNDBeyond API (if the API is freely accessible with decent documentation...).
+			- Research DNDBeyond API and its accessibility.
+*/
+
+>>>>>>> Stashed changes
 // Global Vars
 var isReady = true;
 var trackQueue = [];
@@ -135,8 +158,7 @@ client.on('message', message => {
 		if (command === 'loopsong') {
 			isReady = false;
 			if (voiceDispatcher && !isLoopingSong) {
-				// Remove the queue listener and clear the queue
-				trackQueue = [];
+				// Remove the queue listener
 				voiceDispatcher.removeListener('finish', nextInQueue);
 				// Give the dispatcher a listener that loops
 				voiceDispatcher.on('finish', loopSong);
@@ -167,6 +189,7 @@ client.on('message', message => {
 			isReady = true;
 		}
 		
+<<<<<<< Updated upstream
 		/*
 			Play a given track / add a track to the queue
 			NOTE: Will not play tracks with quotation marks in the middle of the given title.
@@ -206,6 +229,118 @@ client.on('message', message => {
 				message.channel.send('No track given!');
 			}
 			isReady = true;
+=======
+		// Output playlist and according flags
+		if (command === 'status') {
+			isReady = false
+			
+			// Display flags and volume
+			loopSongMsg = isLoopingSong ? ':repeat_one:' : ':x:'
+			loopQueueMsg = isLoopingQueue ? ':repeat:' : ':x:'
+			readableVol = (currentVolume * 100) + '%'
+			statusMsg = 'Looping Song: ' + loopSongMsg + '    Looping Playlist: ' + loopQueueMsg + '    Volume: ' + readableVol
+			
+			// Display current song
+			currentTrackMsg = currentTrack ? currentTrack : 'Nothing!'
+			statusMsg += '\nCurrent Song: ' + currentTrackMsg
+			
+			// Display playlist, if there is one
+			if (trackQueue.length > 1) {
+				statusMsg += '\n\nPlaylist:\n'
+				for(let i = 0; i < trackQueue.length; i++) {
+					let songNum = i + 1
+					let songNameArr = trackQueue[i].split('\\')
+					let songName = songNameArr[songNameArr.length - 1]
+					let currentSong = currentPlaceInQueue === i
+						? isLoopingSong
+							? ' :repeat_one:'
+							: ' :arrow_forward:'
+						: ''
+					statusMsg += songNum + '. ' + songName + currentSong + '\n' 
+				}
+			}
+			
+			message.channel.send(statusMsg)
+			isReady = true
+		}
+		
+		// Roll a custom amount of custom dice
+		if (command === 'roll' || command === 'r') {
+			isReady = false
+			
+			if (args.length > 0) {
+				// Get number of dice, and kind of dice, to roll
+				let argArr = args[0].split('d')
+				if (argArr.length === 2) {
+					let num = Number(argArr[0])
+					let die = Number(argArr[1])
+					
+					if (Number.isInteger(num) && Number.isInteger(die)) {
+						num = Math.abs(num)
+						die = Math.abs(die)
+						let tooMany = num > 100
+						let tooLarge = die > 1000
+						
+						if (tooMany) {
+							message.channel.send('Number of dice must be less than 100!')
+						}
+						
+						if (tooLarge) {
+							message.channel.send('Largest dice allowed is d1000!')
+						}
+						
+						if (!tooMany && !tooLarge) {
+							rollDice(num, die, message)
+						}
+					} else {
+						message.channel.send('One or more invalid numbers! Format: "!roll 1d6"')
+					}
+				} else {
+					message.channel.send('Incorrect format! Format: "!roll 1d6"')
+				}
+			} else {
+				message.channel.send('No die given! Format: "!roll 1d6"')
+			}
+			
+			isReady = true
+		}
+		
+		// SET ROLL COMMANDS
+		if (command === 'rd4') {
+			isReady = false
+			rollDice(1, 4, message)
+			isReady = true
+		}
+		
+		if (command === 'rd6') {
+			isReady = false
+			rollDice(1, 6, message)
+			isReady = true
+		}
+		
+		if (command === 'rd8') {
+			isReady = false
+			rollDice(1, 8, message)
+			isReady = true
+		}
+		
+		if (command === 'rd10') {
+			isReady = false
+			rollDice(1, 10, message)
+			isReady = true
+		}
+		
+		if (command === 'rd12') {
+			isReady = false
+			rollDice(1, 12, message)
+			isReady = true
+		}
+		
+		if (command === 'rd20') {
+			isReady = false
+			rollDice(1, 20, message)
+			isReady = true
+>>>>>>> Stashed changes
 		}
 		
 		// Set the volume to given floating point number
@@ -299,6 +434,39 @@ client.on('message', message => {
 		logger.info(ex.message)
 	}
 });
+
+function rollDice(num, die, message) {
+	let total = 0;
+	let totalArr = [];
+					
+	// Roll the dice!
+	for (let i = 0; i < num; i++) {
+		let numRolled = getRandomIntInclusive(1, die)
+		total += numRolled
+		totalArr.push(numRolled)
+	}
+					
+	// Print total rolled and individual rolls
+	let rollMsg = '__Rolled :game_die: ' + num + 'd' + die + '__\nTotal: :crossed_swords:[ ' + total + ' ]:crossed_swords:\nDice Rolled: [ '
+	for (let i = 0; i < totalArr.length; i++) {
+		if (totalArr[i] === 1) {
+			rollMsg += ':small_red_triangle_down: __*' + totalArr[i] + '*__'
+		} else if (totalArr[i] === die) {
+			rollMsg += ':small_blue_diamond: __*' + totalArr[i] + '*__'
+		} else {
+			rollMsg += totalArr[i]
+		}
+						
+		if (i !== totalArr.length - 1) {
+			rollMsg += ' ,  '
+		} else {
+			rollMsg += ' '
+		}
+	}
+					
+	rollMsg += ']'
+	message.channel.send(rollMsg)
+}
 
 /*
 	Name: playOrAddTrack
@@ -425,6 +593,22 @@ function setBotPresence(activityType = null, fileName = "") {
 */
 function isFloat(n){
     return Number(n) === n && n % 1 !== 0;
+}
+
+/*
+	Name: getRandomIntInclusive
+	Description: Found in Mozilla JS docs, gets a random
+				 integer between two values while being
+				 inclusive at both ends.
+	
+	Params:
+		min: The minimum value to be randomized, inclusive
+		max: The maximum value to be randomized, inclusive
+*/
+function getRandomIntInclusive(min, max) {
+  min = Math.ceil(min);
+  max = Math.floor(max);
+  return Math.floor(Math.random() * (max - min + 1) + min); //The maximum is inclusive and the minimum is inclusive
 }
 
 // Start the bot by authorizing it with the token saved in auth
