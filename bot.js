@@ -50,6 +50,7 @@ var currentTrack = null;
 var currentPlaceInQueue = 0;
 var isLoopingSong = false;
 var isLoopingQueue = false;
+var isPaused = false;
 var currentVolume = 0.03;
 /* 
 	NOTE: The bot defaults to 3% volume on startup. I find this to be a good volume for the bot, as the volume can be EXTREMELY loud.
@@ -68,13 +69,10 @@ client.on('ready', function (evt) {
 client.on('message', message => {
 	try {
 		// The previous command has locked the bot and hasn't finished executing
-<<<<<<< Updated upstream
-		if (!isReady)
-=======
 		if (!isReady) {
-			message.channel.send('Not ready!');
->>>>>>> Stashed changes
+			message.channel.send('Not ready!')
 			return;
+		}
 		
 		// Ignore other bot messages
 		if (message.author.bot)
@@ -109,6 +107,7 @@ client.on('message', message => {
 			} else {
 				message.channel.send('Join a voice channel first, 4head!');
 			}
+			isReady = true;
 		}
 		
 		// Leave the current voice channel and reset some defaults
@@ -119,7 +118,10 @@ client.on('message', message => {
 				channelConnection = null;
 				voiceDispatcher = null;
 				currentTrack = null;
-				isLooping = false;
+				isLoopingSong = false;
+				isLoopingPlaylist = false;
+				isPaused = false;
+				currentPlaceInQueue = 0;
 			} else {
 				message.channel.send('No channel to leave!');
 			}
@@ -141,6 +143,10 @@ client.on('message', message => {
 		if (command === 'play') {
 			if (args.length > 0) {
 				parseTrackArgs(args, message);
+			} else if (voiceDispatcher && isPaused) {
+				// A fallthrough for play/pause to make sense...
+				isPaused = false;
+				voiceDispatcher.resume();
 			} else {
 				message.channel.send('No track given!');
 			}
@@ -149,34 +155,22 @@ client.on('message', message => {
 		
 		// Pause the StreamDispatcher
 		if (command === 'pause') {
-<<<<<<< Updated upstream
-			isReady = false;
-			if (voiceDispatcher) {
-				voiceDispatcher.pause()
-=======
 			if (voiceDispatcher && !isPaused) {
 				isPaused = true;
 				voiceDispatcher.pause();
 			} else if (isPaused) {
 				message.channel.send('Command.io is already paused...');
->>>>>>> Stashed changes
 			}
 			isReady = true;
 		}
 		
 		// Resume the StreamDispatcher
 		if (command === 'resume') {
-<<<<<<< Updated upstream
-			isReady = false;
-			if (voiceDispatcher) {
-				voiceDispatcher.resume()
-=======
-			if (voiceDispatcher && isPaused) {
+      if (voiceDispatcher && isPaused) {
 				isPaused = false;
 				voiceDispatcher.resume();
 			} else if (!isPaused) {
 				message.channel.send('Command.io is not paused...');
->>>>>>> Stashed changes
 			}
 			isReady = true;
 		}
@@ -189,20 +183,18 @@ client.on('message', message => {
 			isReady = true;
 		}
 		
-<<<<<<< Updated upstream
-=======
 		// Empty the playlist and stop the current song
 		if (command === 'stop') {
 			resetPlaylistAndFlags()
 			message.channel.send('The playlist is now empty. All flags have been reset.');
 			isReady = true;
 		}
-		
->>>>>>> Stashed changes
+    
 		// Set the flag for looping the current song, and replace the current on finish listener
 		if (command === 'loopsong') {
 			if (voiceDispatcher && !isLoopingSong) {
 				// Remove the queue listener
+				trackQueue = [];
 				voiceDispatcher.removeListener('finish', nextInQueue);
 				// Give the dispatcher a listener that loops
 				voiceDispatcher.on('finish', loopSong);
@@ -213,7 +205,7 @@ client.on('message', message => {
 				voiceDispatcher.removeListener('finish', loopSong);
 				voiceDispatcher.on('finish', nextInQueue);
 				message.channel.send('No longer looping: ' + currentTrack);
-				isLoopingSong = false
+				isLoopingSong = false;
 			}
 			isReady = true;
 		}
@@ -227,132 +219,86 @@ client.on('message', message => {
 			} else if (voiceDispatcher && isLoopingQueue) {
 				// Reset the flag to let the queue end
 				message.channel.send('No longer looping the playlist!');
-				isLoopingQueue = false
+				isLoopingQueue = false;
 			}
 			isReady = true;
 		}
 		
-
 		// Output playlist and according flags
 		if (command === 'status') {
-<<<<<<< Updated upstream
-			isReady = false
-			
-=======
->>>>>>> Stashed changes
 			// Display flags and volume
-			loopSongMsg = isLoopingSong ? ':repeat_one:' : ':x:'
-			loopQueueMsg = isLoopingQueue ? ':repeat:' : ':x:'
-			readableVol = (currentVolume * 100) + '%'
-			statusMsg = 'Looping Song: ' + loopSongMsg + '    Looping Playlist: ' + loopQueueMsg + '    Volume: ' + readableVol
+			loopSongMsg = isLoopingSong ? ':repeat_one:' : ':x:';
+			loopQueueMsg = isLoopingQueue ? ':repeat:' : ':x:';
+			readableVol = (currentVolume * 100) + '%';
+			statusMsg = 'Looping Song: ' + loopSongMsg + '    Looping Playlist: ' + loopQueueMsg + '    Volume: ' + readableVol;
 			
 			// Display current song
-			currentTrackMsg = currentTrack ? currentTrack : 'Nothing!'
-			statusMsg += '\nCurrent Song: ' + currentTrackMsg
+			currentTrackMsg = currentTrack ? currentTrack : 'Nothing!';
+			statusMsg += '\nCurrent Song: ' + currentTrackMsg;
 			
 			// Display playlist, if there is one
 			if (trackQueue.length > 1) {
-				statusMsg += '\n\nPlaylist:\n'
+				statusMsg += '\n\nPlaylist:\n';
 				for(let i = 0; i < trackQueue.length; i++) {
-					let songNum = i + 1
-					let songNameArr = trackQueue[i].split('\\')
-					let songName = songNameArr[songNameArr.length - 1]
+					let songNum = i + 1;
+					let songNameArr = trackQueue[i].split('\\');
+					let songName = songNameArr[songNameArr.length - 1];
 					let currentSong = currentPlaceInQueue === i
 						? isLoopingSong
 							? ' :repeat_one:'
 							: ' :arrow_forward:'
-						: ''
-					statusMsg += songNum + '. ' + songName + currentSong + '\n' 
+						: '';
+					statusMsg += songNum + '. ' + songName + currentSong + '\n';
 				}
 			}
 			
-			message.channel.send(statusMsg)
-			isReady = true
+			message.channel.send(statusMsg);
+			isReady = true;
 		}
 		
 		// Roll a custom amount of custom dice
 		if (command === 'roll' || command === 'r') {
-<<<<<<< Updated upstream
-			isReady = false
-			
-=======
->>>>>>> Stashed changes
 			if (args.length > 0) {
 				// Get number of dice, and kind of dice, to roll
-				let argArr = args[0].split('d')
+				let argArr = args[0].split('d');
 				if (argArr.length === 2) {
-					let num = Number(argArr[0])
-					let die = Number(argArr[1])
+					let num = Number(argArr[0]);
+					let die = Number(argArr[1]);
 					
 					if (Number.isInteger(num) && Number.isInteger(die)) {
-						num = Math.abs(num)
-						die = Math.abs(die)
-						let tooMany = num > 100
-						let tooLarge = die > 1000
+						num = Math.abs(num);
+						die = Math.abs(die);
+						let tooMany = num > 100;
+						let tooLarge = die > 1000;
 						
 						if (tooMany) {
-							message.channel.send('Number of dice must be less than 100!')
+							message.channel.send('Number of dice must be less than 100!');
 						}
 						
 						if (tooLarge) {
-							message.channel.send('Largest dice allowed is d1000!')
+							message.channel.send('Largest dice allowed is d1000!');
 						}
 						
 						if (!tooMany && !tooLarge) {
-							rollDice(num, die, message)
+							rollDice(num, die, message);
 						}
 					} else {
-						message.channel.send('One or more invalid numbers! Format: "!roll 1d6"')
+						message.channel.send('One or more invalid numbers! Format: "!roll 1d6"');
 					}
 				} else {
-					message.channel.send('Incorrect format! Format: "!roll 1d6"')
+					message.channel.send('Incorrect format! Format: "!roll 1d6"');
 				}
 			} else {
-				message.channel.send('No die given! Format: "!roll 1d6"')
+				message.channel.send('No die given! Format: "!roll 1d6"');
 			}
 			
-			isReady = true
+			isReady = true;
 		}
 		
 		// SET ROLL COMMANDS
 		if (command === 'rd4') {
-<<<<<<< Updated upstream
-			isReady = false
 			rollDice(1, 4, message)
 			isReady = true
-		}
-		
-		if (command === 'rd6') {
-			isReady = false
-			rollDice(1, 6, message)
-			isReady = true
-		}
-		
-		if (command === 'rd8') {
-			isReady = false
-			rollDice(1, 8, message)
-			isReady = true
-		}
-		
-		if (command === 'rd10') {
-			isReady = false
-			rollDice(1, 10, message)
-			isReady = true
-		}
-		
-		if (command === 'rd12') {
-			isReady = false
-			rollDice(1, 12, message)
-			isReady = true
-		}
-		
-		if (command === 'rd20') {
-			isReady = false
-			rollDice(1, 20, message)
-			isReady = true
-=======
-			rollDice(1, 4, message);
-			isReady = true;
 		}
 		
 		if (command === 'rd6') {
@@ -376,9 +322,8 @@ client.on('message', message => {
 		}
 		
 		if (command === 'rd20') {
-			rollDice(1, 20, message);
-			isReady = true;
->>>>>>> Stashed changes
+			rollDice(1, 20, message)
+			isReady = true
 		}
 		
 		// Set the volume to given floating point number
@@ -586,83 +531,6 @@ function resetPlaylistAndFlags() {
 	currentTrack = null;
 	voiceDispatcher.end()
 	setBotPresence();
-}
-
-/*
-	Name: parseTrackArgs
-	Description: Parse the arguments for the track name
-	Params:
-		args: array, given array of arguments. Typically means a file path with spaces
-		message: object, the DiscordJS message object
-*/
-function parseTrackArgs(args, message) {
-	// Set track to the first arg
-	let track = args[0];
-	let filePath = track;
-	
-	// Check if this is a filepath with quotations
-	if (args[0].search('"') !== -1) {
-		// Build the full filepath
-		filePath = '';
-		args.forEach(
-			(arg) => {
-				let quoteIdx = arg.search('"');
-				if (quoteIdx == 0) {
-					// Remove the first quotation mark
-					let fixedArg = arg.substring(quoteIdx + 1) + ' ';
-					filePath += fixedArg;
-				} else if (quoteIdx !== -1) {
-					// Remove the last quotation mark
-					let fixedArg = arg.slice(0, -1);
-					filePath += fixedArg;
-				} else {
-					// Add anything inbetween
-					filePath += arg + ' ';
-				}
-		})
-		track = filePath;
-	}
-	
-	// Use the filesystem to check if this is a file or a directory
-	let fileInfo = fs.lstatSync(track);
-	if (fileInfo.isFile()) {
-		// Play it or add it to the queue
-		playOrAddTrack('./' + track, message);
-	} else if (fileInfo.isDirectory()) {
-		// Recursively access the directory to grab all files and add them to the queue
-		recursivelyAddAllTracksInDirectory(track, message);
-	}
-}
-
-/*
-	Name: recursivelyAddAllTracksInDirectory
-	Description: Take in a directory path and add all tracks to the queue from this folder and subfolders
-				 NOTE: Will only bulk add MP3 files (for safety)
-	Params:
-		dirPath: string, the directory path
-		message: object, the DiscordJS message object
-*/
-async function recursivelyAddAllTracksInDirectory(dirPath, message) {
-	// Get all folders and files in dirPath
-	const files = await fs.promises.readdir(dirPath);
-	
-	for(const file of files) {
-		let path = dirPath + "\\" + file;
-		let fileStat = fs.lstatSync(path);
-		
-		// Check for file or folder
-		if (fileStat.isFile()) {
-			// Check the file extension
-			let fileExt = path.split(".").pop();
-			if (fileExt == "mp3") {
-				// Add it to the queue
-				playOrAddTrack(path, message, true);
-			}
-		} else if (fileStat.isDirectory()) {
-			// Go into the directory
-			recursivelyAddAllTracksInDirectory(path, message);
-		}
-	}
 }
 
 /*
