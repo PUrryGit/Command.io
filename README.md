@@ -19,6 +19,8 @@ Tells Command.io to leave the voice channel it is currently in. Also aliased `di
 `!play "Folder"`
 
 This command takes in a file path to a file or folder in the root location of bot.js. It will add a given file to the playlist, and start playing it if there is nothing else playing. If it is given a folder, it will recursively add any files found in any subfolders and itself.
+
+This command will also `!resume` the bot if it is paused and an empty `!play` is called.
 ### Pause
 `!pause`
 
