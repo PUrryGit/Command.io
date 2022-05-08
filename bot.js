@@ -68,7 +68,12 @@ client.on('ready', function (evt) {
 client.on('message', message => {
 	try {
 		// The previous command has locked the bot and hasn't finished executing
+<<<<<<< Updated upstream
 		if (!isReady)
+=======
+		if (!isReady) {
+			message.channel.send('Not ready!');
+>>>>>>> Stashed changes
 			return;
 		
 		// Ignore other bot messages
@@ -82,23 +87,23 @@ client.on('message', message => {
 		// We have a valid command, separate out any arguments into individual array elements
 		const args = message.content.slice(1).trim().split(/ +/g);
 		const command = args.shift().toLowerCase();
-		logger.info(command)
+		logger.info(command);
+		isReady = false;
 		
 		// CORE BOT FUNCTIONS
 		// Join the voice channel of the message sender
 		if (command === 'join') {
-			isReady = false;
 			if (message.member.voice.channel) {
-				message.member.voice.channel.join()
+				message.member.voice.channel.join();
 				.then(connection => {
 					// Keep track of the current channel
 					currentConnectedChannel = message.member.voice.channel;
 					channelConnection = connection;
-					logger.info('Connected!')
+					logger.info('Connected!');
 					isReady = true;
 				})
 				.catch(error => {
-					logger.info('Failed to connect')
+					logger.info('Failed to connect');
 					isReady = true;
 				})
 			} else {
@@ -108,7 +113,6 @@ client.on('message', message => {
 		
 		// Leave the current voice channel and reset some defaults
 		if (command === 'disconnect' || command === 'leave') {
-			isReady = false;
 			if (currentConnectedChannel) {
 				currentConnectedChannel.leave();
 				currentConnectedChannel = null;
@@ -135,7 +139,6 @@ client.on('message', message => {
 				  !play "Sub Folder\some track name.mp3"
 		*/
 		if (command === 'play') {
-			isReady = false;
 			if (args.length > 0) {
 				parseTrackArgs(args, message);
 			} else {
@@ -146,34 +149,58 @@ client.on('message', message => {
 		
 		// Pause the StreamDispatcher
 		if (command === 'pause') {
+<<<<<<< Updated upstream
 			isReady = false;
 			if (voiceDispatcher) {
 				voiceDispatcher.pause()
+=======
+			if (voiceDispatcher && !isPaused) {
+				isPaused = true;
+				voiceDispatcher.pause();
+			} else if (isPaused) {
+				message.channel.send('Command.io is already paused...');
+>>>>>>> Stashed changes
 			}
 			isReady = true;
 		}
 		
 		// Resume the StreamDispatcher
 		if (command === 'resume') {
+<<<<<<< Updated upstream
 			isReady = false;
 			if (voiceDispatcher) {
 				voiceDispatcher.resume()
+=======
+			if (voiceDispatcher && isPaused) {
+				isPaused = false;
+				voiceDispatcher.resume();
+			} else if (!isPaused) {
+				message.channel.send('Command.io is not paused...');
+>>>>>>> Stashed changes
 			}
 			isReady = true;
 		}
 		
 		// Go to the next track in the queue
 		if (command === 'next') {
-			isReady = false;
 			if (voiceDispatcher) {
 				nextInQueue();
 			}
 			isReady = true;
 		}
 		
+<<<<<<< Updated upstream
+=======
+		// Empty the playlist and stop the current song
+		if (command === 'stop') {
+			resetPlaylistAndFlags()
+			message.channel.send('The playlist is now empty. All flags have been reset.');
+			isReady = true;
+		}
+		
+>>>>>>> Stashed changes
 		// Set the flag for looping the current song, and replace the current on finish listener
 		if (command === 'loopsong') {
-			isReady = false;
 			if (voiceDispatcher && !isLoopingSong) {
 				// Remove the queue listener
 				voiceDispatcher.removeListener('finish', nextInQueue);
@@ -193,7 +220,6 @@ client.on('message', message => {
 		
 		// Set the flag for looping the current queue
 		if (command === 'loopplaylist') {
-			isReady = false;
 			if (voiceDispatcher && !isLoopingQueue) {
 				// Set the flag to loop the queue
 				message.channel.send('Now looping the playlist!');
@@ -209,8 +235,11 @@ client.on('message', message => {
 
 		// Output playlist and according flags
 		if (command === 'status') {
+<<<<<<< Updated upstream
 			isReady = false
 			
+=======
+>>>>>>> Stashed changes
 			// Display flags and volume
 			loopSongMsg = isLoopingSong ? ':repeat_one:' : ':x:'
 			loopQueueMsg = isLoopingQueue ? ':repeat:' : ':x:'
@@ -243,8 +272,11 @@ client.on('message', message => {
 		
 		// Roll a custom amount of custom dice
 		if (command === 'roll' || command === 'r') {
+<<<<<<< Updated upstream
 			isReady = false
 			
+=======
+>>>>>>> Stashed changes
 			if (args.length > 0) {
 				// Get number of dice, and kind of dice, to roll
 				let argArr = args[0].split('d')
@@ -284,6 +316,7 @@ client.on('message', message => {
 		
 		// SET ROLL COMMANDS
 		if (command === 'rd4') {
+<<<<<<< Updated upstream
 			isReady = false
 			rollDice(1, 4, message)
 			isReady = true
@@ -317,12 +350,40 @@ client.on('message', message => {
 			isReady = false
 			rollDice(1, 20, message)
 			isReady = true
+=======
+			rollDice(1, 4, message);
+			isReady = true;
+		}
+		
+		if (command === 'rd6') {
+			rollDice(1, 6, message);
+			isReady = true;
+		}
+		
+		if (command === 'rd8') {
+			rollDice(1, 8, message);
+			isReady = true;
+		}
+		
+		if (command === 'rd10') {
+			rollDice(1, 10, message);
+			isReady = true;
+		}
+		
+		if (command === 'rd12') {
+			rollDice(1, 12, message);
+			isReady = true;
+		}
+		
+		if (command === 'rd20') {
+			rollDice(1, 20, message);
+			isReady = true;
+>>>>>>> Stashed changes
 		}
 		
 		// Set the volume to given floating point number
 		// WARNING: This audio stream can be EXTREMELY loud. I advise not setting this above 10%, personally.
 		if (command === 'volume') {
-			isReady = false;
 			if (voiceDispatcher) {
 				if (args.length > 0) {
 					if (isFloat(parseFloat(args[0]))) {
@@ -344,7 +405,6 @@ client.on('message', message => {
 		// VOLUME SHORTCUTS
 		// Set the volume to 10%
 		if (command === 'volume10') {
-			isReady = false;
 			if (voiceDispatcher) {
 				currentVolume = 0.10;
 				voiceDispatcher.setVolume(currentVolume);
@@ -357,7 +417,6 @@ client.on('message', message => {
 		
 		// Set the volume to 20%
 		if (command === 'volume20') {
-			isReady = false;
 			if (voiceDispatcher) {
 				currentVolume = 0.20;
 				voiceDispatcher.setVolume(currentVolume);
@@ -370,7 +429,6 @@ client.on('message', message => {
 		
 		// Set the volume to 30%
 		if (command === 'volume30') {
-			isReady = false;
 			if (voiceDispatcher) {
 				currentVolume = 0.30;
 				voiceDispatcher.setVolume(currentVolume);
@@ -383,7 +441,6 @@ client.on('message', message => {
 		
 		// Set the volume to 40%
 		if (command === 'volume40') {
-			isReady = false;
 			if (voiceDispatcher) {
 				currentVolume = 0.40;
 				voiceDispatcher.setVolume(currentVolume);
@@ -396,7 +453,6 @@ client.on('message', message => {
 		
 		// Set the volume to 50%
 		if (command === 'volume50') {
-			isReady = false;
 			if (voiceDispatcher) {
 				currentVolume = 0.50;
 				voiceDispatcher.setVolume(currentVolume);
@@ -407,7 +463,8 @@ client.on('message', message => {
 			isReady = true;
 		}
 	} catch (ex) {
-		logger.info(ex.message)
+		logger.info('CAUGHT: ' + ex.message);
+		isReady = true;
 	}
 });
 
@@ -417,31 +474,31 @@ function rollDice(num, die, message) {
 					
 	// Roll the dice!
 	for (let i = 0; i < num; i++) {
-		let numRolled = getRandomIntInclusive(1, die)
-		total += numRolled
-		totalArr.push(numRolled)
+		let numRolled = getRandomIntInclusive(1, die);
+		total += numRolled;
+		totalArr.push(numRolled);
 	}
 					
 	// Print total rolled and individual rolls
-	let rollMsg = '__Rolled :game_die: ' + num + 'd' + die + '__\nTotal: :crossed_swords:[ ' + total + ' ]:crossed_swords:\nDice Rolled: [ '
+	let rollMsg = '__Rolled :game_die: ' + num + 'd' + die + '__\nTotal: :crossed_swords:[ ' + total + ' ]:crossed_swords:\nDice Rolled: [ ';
 	for (let i = 0; i < totalArr.length; i++) {
 		if (totalArr[i] === 1) {
-			rollMsg += ':small_red_triangle_down: __*' + totalArr[i] + '*__'
+			rollMsg += ':small_red_triangle_down: __*' + totalArr[i] + '*__';
 		} else if (totalArr[i] === die) {
-			rollMsg += ':small_blue_diamond: __*' + totalArr[i] + '*__'
+			rollMsg += ':small_blue_diamond: __*' + totalArr[i] + '*__';
 		} else {
-			rollMsg += totalArr[i]
+			rollMsg += totalArr[i];
 		}
 						
 		if (i !== totalArr.length - 1) {
-			rollMsg += ' ,  '
+			rollMsg += ' ,  ';
 		} else {
-			rollMsg += ' '
+			rollMsg += ' ';
 		}
 	}
 					
-	rollMsg += ']'
-	message.channel.send(rollMsg)
+	rollMsg += ']';
+	message.channel.send(rollMsg);
 }
 
 /*
@@ -475,7 +532,7 @@ function parseTrackArgs(args, message) {
 					// Add anything inbetween
 					filePath += arg + ' ';
 				}
-		})
+		});
 		track = filePath;
 	}
 	
@@ -519,6 +576,16 @@ async function recursivelyAddAllTracksInDirectory(dirPath, message) {
 			recursivelyAddAllTracksInDirectory(path, message);
 		}
 	}
+}
+
+function resetPlaylistAndFlags() {
+	trackQueue = [];
+	isLoopingSong = false;
+	isLoopingPlaylist = false;
+	currentPlaceInQueue = 0;
+	currentTrack = null;
+	voiceDispatcher.end()
+	setBotPresence();
 }
 
 /*
@@ -613,9 +680,9 @@ function playOrAddTrack(trackTitle, message, bulkAdd = false) {
 		if (trackQueue.length === 0) {
 			// Play the track now
 			trackQueue.push(trackTitle);
-			currentTrack = trackTitle
-			logger.info(currentTrack);
-			voiceDispatcher = channelConnection.play(currentTrack)
+			currentTrack = trackTitle;
+			logger.info('playOrAddTrack - currentTrack: ' + currentTrack);
+			voiceDispatcher = channelConnection.play(currentTrack);
 			voiceDispatcher.setVolume(currentVolume);
 			currentPlaceInQueue = 0;
 			// Add the queue callback
@@ -666,15 +733,15 @@ function nextInQueue() {
 		logger.info('Loop the queue.');
 	}
 		
-	if (currentPlaceInQueue != trackQueue.length) {
+	if (currentPlaceInQueue < trackQueue.length) {
 		nextTrack = trackQueue[currentPlaceInQueue];
 		voiceDispatcher = channelConnection.play(nextTrack);
-		currentTrack = nextTrack
+		currentTrack = nextTrack;
 		
 		client.channels.fetch(client.user.lastMessageChannelID)
 			.then(channel => {
 				channel.send('Now Playing: ' + currentTrack);
-		})
+		});
 		
 		// Reset the volume to the current volume
 		voiceDispatcher.setVolume(currentVolume);
@@ -687,8 +754,7 @@ function nextInQueue() {
 		setBotPresence("PLAYING", fileName);
 	} else {
 		// We aren't looped and hit the end of the queue, so reset the queue so newly added songs get started
-		trackQueue = [];
-		setBotPresence();
+		resetPlaylistAndFlags();
 	}
 }
 
