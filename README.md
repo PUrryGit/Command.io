@@ -71,3 +71,8 @@ There are also some shortcuts aliased for specific dice you would typically see 
 `!rd10`
 `!rd12`
 `!rd20`
+
+### Summon Demon
+`!summondemon`
+
+This handles a specific case I had with my D&D group, but its an interesting command so I included it in the repo. This handles randomly choosing a demon for the Summon Lesser Demon spell in D&D 5e. This command displays the number and name of the demons chosen for the spell. All names are properties of Wizards of the Coast & Hasbro.
