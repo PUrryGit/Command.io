@@ -31,7 +31,7 @@ const client = new Discord.Client();
 		3. *DONE* Command to display the current playlist and parameters (isLoopingSong, isLoopingQueue, volume).
 			- *DONE* Set up a new command.
 			- *DONE* Add function to build a message showcasing the entire playlist.
-			- *DONE*  Add the given flags to the message underneath the playlist.
+			- *DONE* Add the given flags to the message underneath the playlist.
 		4. Shuffle flag to play songs randomly in the playlist.
 			- Set up a new command.
 			- Add interrupt into the listeners that decide which song next.
@@ -52,6 +52,24 @@ var isLoopingSong = false;
 var isLoopingQueue = false;
 var isPaused = false;
 var currentVolume = 0.03;
+var cr1demons = [
+	'Imp',
+	'Maw Demon',
+	'Vargouille',
+	'Quasit',
+];
+var cr12demons = [
+	'Nupperibo',
+	'Cackler',
+];
+var cr14demons = [
+	'Manes',
+	'Stench Kow',
+	'Abyssal Wretch',
+	'Dretch',
+	'Abyssal Chicken',
+];
+
 /* 
 	NOTE: The bot defaults to 3% volume on startup. I find this to be a good volume for the bot, as the volume can be EXTREMELY loud.
 	This does not handle the Discord UI's volume for the bot.
@@ -70,7 +88,7 @@ client.on('message', message => {
 	try {
 		// The previous command has locked the bot and hasn't finished executing
 		if (!isReady) {
-			message.channel.send('Not ready!')
+			message.channel.send('Not ready!');
 			return;
 		}
 		
@@ -92,7 +110,7 @@ client.on('message', message => {
 		// Join the voice channel of the message sender
 		if (command === 'join') {
 			if (message.member.voice.channel) {
-				message.member.voice.channel.join();
+				message.member.voice.channel.join()
 				.then(connection => {
 					// Keep track of the current channel
 					currentConnectedChannel = message.member.voice.channel;
@@ -139,6 +157,7 @@ client.on('message', message => {
 				  !play file_name.mp3
 				  !play "name_with_spaces.mp3"
 				  !play "Sub Folder\some track name.mp3"
+				  !play "Sub folder"
 		*/
 		if (command === 'play') {
 			if (args.length > 0) {
@@ -166,7 +185,7 @@ client.on('message', message => {
 		
 		// Resume the StreamDispatcher
 		if (command === 'resume') {
-      if (voiceDispatcher && isPaused) {
+			if (voiceDispatcher && isPaused) {
 				isPaused = false;
 				voiceDispatcher.resume();
 			} else if (!isPaused) {
@@ -189,7 +208,7 @@ client.on('message', message => {
 			message.channel.send('The playlist is now empty. All flags have been reset.');
 			isReady = true;
 		}
-    
+		
 		// Set the flag for looping the current song, and replace the current on finish listener
 		if (command === 'loopsong') {
 			if (voiceDispatcher && !isLoopingSong) {
@@ -297,8 +316,8 @@ client.on('message', message => {
 		
 		// SET ROLL COMMANDS
 		if (command === 'rd4') {
-			rollDice(1, 4, message)
-			isReady = true
+			rollDice(1, 4, message);
+			isReady = true;
 		}
 		
 		if (command === 'rd6') {
@@ -322,8 +341,32 @@ client.on('message', message => {
 		}
 		
 		if (command === 'rd20') {
-			rollDice(1, 20, message)
-			isReady = true
+			rollDice(1, 20, message);
+			isReady = true;
+		}
+		
+		if (command === 'summondemon') {
+			let summonMessage = '__Summon Lesser Demons__\n';
+			let numRolled = getRandomIntInclusive(1, 6);
+			summonMessage += 'Rolled: [ ' + numRolled + ' ]\n';
+			let demonPile = cr14demons;
+			let numSummoned = 8;
+			
+			if (numRolled < 5) {
+				demonPile = demonPile.concat(cr12demons);
+				numSummoned = 4;
+			}
+			if (numRolled < 3) {
+				demonPile = demonPile.concat(cr1demons);
+				numSummoned = 2;
+			}
+			
+			let demonPileMax = demonPile.length - 1;
+			let demonNum = getRandomIntInclusive(0, demonPileMax);
+			let demon = demonPile[demonNum];
+			summonMessage += 'Summoned [ ' + numSummoned + ' ] ' + demon + '\'s!';
+			message.channel.send(summonMessage);
+			isReady = true;
 		}
 		
 		// Set the volume to given floating point number
@@ -407,12 +450,24 @@ client.on('message', message => {
 			}
 			isReady = true;
 		}
+		
+		isReady = true;
+		return;
 	} catch (ex) {
 		logger.info('CAUGHT: ' + ex.message);
 		isReady = true;
+		return;
 	}
 });
 
+/*
+	Name: rollDice
+	Description: Simulates a number of rolls for a die with a specified number of sides
+	Params:
+		num: number, number of dice to roll
+		die: number, number of sides of the dice
+		message: object, the DiscordJS message object
+*/
 function rollDice(num, die, message) {
 	let total = 0;
 	let totalArr = [];
@@ -455,8 +510,8 @@ function rollDice(num, die, message) {
 */
 function parseTrackArgs(args, message) {
 	// Set track to the first arg
-	let track = args[0];
-	let filePath = track;
+	let path = args[0];
+	let filePath = path;
 	
 	// Check if this is a filepath with quotations
 	if (args[0].search('"') !== -1) {
@@ -478,17 +533,22 @@ function parseTrackArgs(args, message) {
 					filePath += arg + ' ';
 				}
 		});
-		track = filePath;
+		path = filePath;
 	}
 	
-	// Use the filesystem to check if this is a file or a directory
-	let fileInfo = fs.lstatSync(track);
-	if (fileInfo.isFile()) {
-		// Play it or add it to the queue
-		playOrAddTrack('./' + track, message);
-	} else if (fileInfo.isDirectory()) {
-		// Recursively access the directory to grab all files and add them to the queue
-		recursivelyAddAllTracksInDirectory(track, message);
+	// Make sure the path exists
+	if (fs.existsSync(path)) {
+		// Use the filesystem to check if this is a file or a directory
+		let fileInfo = fs.lstatSync(path);
+		if (fileInfo.isFile()) {
+			// Play it or add it to the queue
+			playOrAddTrack('./' + path, message);
+		} else if (fileInfo.isDirectory()) {
+			// Recursively access the directory to grab all files and add them to the queue
+			recursivelyAddAllTracksInDirectory(path, message);
+		}
+	} else {
+		message.channel.send("Given input does not exist: " + path);
 	}
 }
 
@@ -506,23 +566,32 @@ async function recursivelyAddAllTracksInDirectory(dirPath, message) {
 	
 	for(const file of files) {
 		let path = dirPath + "\\" + file;
-		let fileStat = fs.lstatSync(path);
+		// Make sure the path exists
+		if (fs.existsSync(path)) {
+			let fileStat = fs.lstatSync(path);
 		
-		// Check for file or folder
-		if (fileStat.isFile()) {
-			// Check the file extension
-			let fileExt = path.split(".").pop();
-			if (fileExt == "mp3") {
-				// Add it to the queue
-				playOrAddTrack(path, message, true);
+			// Check for file or folder
+			if (fileStat.isFile()) {
+				// Check the file extension
+				let fileExt = path.split(".").pop();
+				if (fileExt == "mp3") {
+					// Add it to the queue
+					playOrAddTrack(path, message, true);
+				}
+			} else if (fileStat.isDirectory()) {
+				// Go into the directory
+				recursivelyAddAllTracksInDirectory(path, message);
 			}
-		} else if (fileStat.isDirectory()) {
-			// Go into the directory
-			recursivelyAddAllTracksInDirectory(path, message);
+		} else {
+			message.channel.send("Given input does not exist: " + path);
 		}
 	}
 }
 
+/*
+	Name: resetPlaylistAndFlags
+	Description: Reset all of the flags we control.
+*/
 function resetPlaylistAndFlags() {
 	trackQueue = [];
 	isLoopingSong = false;
@@ -576,12 +645,14 @@ function playOrAddTrack(trackTitle, message, bulkAdd = false) {
 	Description: Replace the current on finish event to loop the current song.
 */
 function loopSong() {
-	voiceDispatcher = channelConnection.play(currentTrack);
-	// Reset the volume
-	voiceDispatcher.setVolume(currentVolume);
-	// Add the new on finish listener for looping
-	voiceDispatcher.on('finish', loopSong);
-	logger.info('Playing looped file.');
+	if (isLoopingSong) {
+		voiceDispatcher = channelConnection.play(currentTrack);
+		// Reset the volume
+		voiceDispatcher.setVolume(currentVolume);
+		// Add the new on finish listener for looping
+		voiceDispatcher.on('finish', loopSong);
+		logger.info('Playing looped file.');
+	}
 }
 
 /*
@@ -609,7 +680,10 @@ function nextInQueue() {
 		client.channels.fetch(client.user.lastMessageChannelID)
 			.then(channel => {
 				channel.send('Now Playing: ' + currentTrack);
-		});
+			})
+			.catch(error => {
+				logger.info('CAUGHT in nextInQueue(): ' + error.message);
+			});
 		
 		// Reset the volume to the current volume
 		voiceDispatcher.setVolume(currentVolume);
