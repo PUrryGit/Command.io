@@ -75,12 +75,14 @@ client.on('message', message => {
 		}
 		
 		// Ignore other bot messages
-		if (message.author.bot)
+		if (message.author.bot) {
 			return;
+		}
 		
 		// Ignore any message without the given prefix for our commands
-		if (!message.content.startsWith('!'))
+		if (!message.content.startsWith('!')) {
 			return;
+		}
 		
 		// We have a valid command, separate out any arguments into individual array elements
 		const args = message.content.slice(1).trim().split(/ +/g);
@@ -119,7 +121,7 @@ client.on('message', message => {
 				voiceDispatcher = null;
 				currentTrack = null;
 				isLoopingSong = false;
-				isLoopingPlaylist = false;
+				isLoopingQueue = false;
 				isPaused = false;
 				currentPlaceInQueue = 0;
 			} else {
@@ -526,7 +528,7 @@ async function recursivelyAddAllTracksInDirectory(dirPath, message) {
 function resetPlaylistAndFlags() {
 	trackQueue = [];
 	isLoopingSong = false;
-	isLoopingPlaylist = false;
+	isLoopingQueue = false;
 	currentPlaceInQueue = 0;
 	currentTrack = null;
 	voiceDispatcher.end()
