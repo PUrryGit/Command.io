@@ -40,7 +40,7 @@ Sets a flag to loop the current playlist indefinitely. The playlist can still be
 `/r 12d4`
 `/roll 100d1000`
 
-Rolls a set number of dice with a given amount of sides. Formated as `!roll {NUM TO ROLL}d{SIDES OF DICE}`, and aliased with `!r`.
+Rolls a set number of dice with a given amount of sides. Formated as `/roll {NUM TO ROLL}d{SIDES OF DICE}`, and aliased with `/r`.
 There is an upper limitation due to Discord message restrictions: a maximum of 100 dice can be rolled, and the largest die can have 1000 sides.
 There are also some shortcuts aliased for specific dice you would typically see in a game of D&D:
 
