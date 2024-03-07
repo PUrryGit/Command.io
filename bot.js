@@ -22,8 +22,13 @@ let loopList = false;
 
 /*
 	Command.io TODO LIST:
+		- Upgrade again to DiscordJS 14
 		- Fix the bots Presence to show whats currently playing
 		- Add ability to give a folder and play all tracks in that folder
+		- Add Status command to display flags
+		- Add Summon Demon command to summon lesser demons from DND 5e
+		- Add Shuffle command to randomly select next song from playlist
+		- Add Leave command to send the bot out of the voice channel
 */
 
 client.login(auth.token);
@@ -79,6 +84,7 @@ client.on("messageCreate", async (message) => {
             },
 			{
 				name: "roll",
+				aliases: ["r"],
 				description: "Roll a set number of dice",
 				options: [
                     {
@@ -88,7 +94,35 @@ client.on("messageCreate", async (message) => {
                         required: true
                     }
                 ]
-			}
+			},
+			{
+                name: "rd4",
+                description: "Roll 1d4 dice"
+            },
+			{
+                name: "rd6",
+                description: "Roll 1d6 dice"
+            },
+			{
+                name: "rd8",
+                description: "Roll 1d8 dice"
+            },
+			{
+                name: "rd10",
+                description: "Roll 1d10 dice"
+            },
+			{
+                name: "rd12",
+                description: "Roll 1d12 dice"
+            },
+			{
+                name: "rd20",
+                description: "Roll 1d20 dice"
+            },
+			{
+                name: "rd100",
+                description: "Roll 1d100 dice"
+            }
 		]);
 		
 		await message.reply("Deployed!");
@@ -118,6 +152,10 @@ client.on("messageCreate", async (message) => {
 		});
 		
 		connection.subscribe(player);
+	}
+	
+	if (message.content === "!leave" && message.author.id === client.application?.owner?.id) {
+		// TBD
 	}
 });
 
@@ -208,38 +246,148 @@ client.on("interactionCreate", async (interaction) => {
 		return void interaction.followUp(followUpContent);
 	}
 	
-	if (interaction.commandName === 'roll') {
+	if (interaction.commandName === 'shuffle') {
+		await interaction.deferReply();
+		
+		let followUpMessage = null;
+		followUpMessage = 'To be Implemented!'
+		
+		return void interaction.followUp(followUpMessage);
+	}
+	
+	if (interaction.commandName === 'status') {
+		await interaction.deferReply();
+		
+		let followUpMessage = null;
+		followUpMessage = 'To be Implemented Aagin!'
+		
+		return void interaction.followUp(followUpMessage);
+	}
+	
+	if (interaction.commandName === 'roll' || interaction.commandName === 'r') {
 		await interaction.deferReply();
 		
 		const dice = interaction.options.get("dice").value;
 		let followUpMessage = null;
 		let argArr = dice.split('d');
 		
-		let num = Number(argArr[0]);
-		let die = Number(argArr[1]);
-		
-		if (Number.isInteger(num) && Number.isInteger(die)) {
-			num = Math.abs(num);
-			die = Math.abs(die);
-			let tooMany = num > 100;
-			let tooLarge = die > 1000;
-						
-			if (tooMany) {
-				followUpMessage = 'Number of dice must be less than 100!';
-			}
-						
-			if (tooLarge) {
-				followUpMessage = 'Largest dice allowed is d1000!';
-			}
-						
-			if (!tooMany && !tooLarge) {
-				followUpMessage = rollDice(num, die);
-			}
-		}
+		followUpMessage = handleRollCommand(argArr)
 		
 		return void interaction.followUp({ content: followUpMessage, ephemeral: true });
 	}
+	
+	if (interaction.commandName === 'rd4') {
+		await interaction.deferReply();
+		
+		let followUpMessage = null;
+		let argArr = ['1', '4'];
+		
+		followUpMessage = handleRollCommand(argArr)
+		
+		return void interaction.followUp({ content: followUpMessage, ephemeral: true });
+	}
+	
+	if (interaction.commandName === 'rd6') {
+		await interaction.deferReply();
+		
+		let followUpMessage = null;
+		let argArr = ['1', '6'];
+		
+		followUpMessage = handleRollCommand(argArr)
+		
+		return void interaction.followUp({ content: followUpMessage, ephemeral: true });
+	}
+	
+	if (interaction.commandName === 'rd8') {
+		await interaction.deferReply();
+		
+		let followUpMessage = null;
+		let argArr = ['1', '8'];
+		
+		followUpMessage = handleRollCommand(argArr)
+		
+		return void interaction.followUp({ content: followUpMessage, ephemeral: true });
+	}
+	
+	if (interaction.commandName === 'rd10') {
+		await interaction.deferReply();
+		
+		let followUpMessage = null;
+		let argArr = ['1', '10'];
+		
+		followUpMessage = handleRollCommand(argArr)
+		
+		return void interaction.followUp({ content: followUpMessage, ephemeral: true });
+	}
+	
+	if (interaction.commandName === 'rd12') {
+		await interaction.deferReply();
+		
+		let followUpMessage = null;
+		let argArr = ['1', '12'];
+		
+		followUpMessage = handleRollCommand(argArr)
+		
+		return void interaction.followUp({ content: followUpMessage, ephemeral: true });
+	}
+	
+	if (interaction.commandName === 'rd20') {
+		await interaction.deferReply();
+		
+		let followUpMessage = null;
+		let argArr = ['1', '20'];
+		
+		followUpMessage = handleRollCommand(argArr)
+		
+		return void interaction.followUp({ content: followUpMessage, ephemeral: true });
+	}
+	
+	if (interaction.commandName === 'rd100') {
+		await interaction.deferReply();
+		
+		let followUpMessage = null;
+		let argArr = ['1', '100'];
+		
+		followUpMessage = handleRollCommand(argArr)
+		
+		return void interaction.followUp({ content: followUpMessage, ephemeral: true });
+	}
+	
+	if (interaction.commandName === 'summondemon') {
+		await interaction.deferReply();
+		
+		let followUpMessage = null;
+		followUpMessage = 'To be Implemented Aagin!'
+		
+		return void interaction.followUp(followUpMessage);
+	}
 });
+
+function handleRollCommand(diceArr) {
+	let num = Number(diceArr[0]);
+	let die = Number(diceArr[1]);
+		
+	if (Number.isInteger(num) && Number.isInteger(die)) {
+		num = Math.abs(num);
+		die = Math.abs(die);
+		let tooMany = num > 100;
+		let tooLarge = die > 1000;
+					
+		if (tooMany) {
+			followUpMessage = 'Number of dice must be less than 100!';
+		}
+						
+		if (tooLarge) {
+			followUpMessage = 'Largest dice allowed is d1000!';
+		}
+						
+		if (!tooMany && !tooLarge) {
+			followUpMessage = rollDice(num, die);
+		}
+	}
+	
+	return followUpMessage;
+}
 
 function playSong(resource) {
 	player.play(resource);
