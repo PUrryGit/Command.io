@@ -50,3 +50,4 @@ There are also some shortcuts aliased for specific dice you would typically see 
 `/rd10`
 `/rd12`
 `/rd20`
+`/rd100`
