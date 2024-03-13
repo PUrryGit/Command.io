@@ -1,5 +1,5 @@
 # Command.io
-A simple Discord bot, built using JavaScript and Node.js, to play local music files.
+A simple Discord bot, built using JavaScript and Node.js, to play local music files. Currently using Discord.js v14.14.1
 
 ## Commands
 ### Deploy
@@ -10,6 +10,10 @@ Adds all of the bot's new `/` commands to Discord so they are discoverable by ty
 `!join`
 
 Tells Command.io bot to join the voice channel you are currently in.
+### Leave
+`!leave`
+
+Tells Command.io bot to leave the voice channel it is connected too.
 ### Play
 `/play File.mp3`
 `/play Folder\File.mp3`
