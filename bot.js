@@ -1,14 +1,15 @@
-const { Client, GuildMember, Intents } = require('discord.js');
-const { joinVoiceChannel, createAudioPlayer, createAudioResource, NoSubscriberBehavior, AudioPlayerStatus } = require('@discordjs/voice');
+const { Client, GuildMember, GatewayIntentBits, ApplicationCommandOptionType, Events, ActivityType   } = require('discord.js');
+const { joinVoiceChannel, createAudioPlayer, createAudioResource, getVoiceConnection, NoSubscriberBehavior, AudioPlayerStatus } = require('@discordjs/voice');
 const auth = require("./auth.json");
 
 const client = new Client({
 	intents: [
-		Intents.FLAGS.GUILDS,
-		Intents.FLAGS.GUILD_MEMBERS,
-		Intents.FLAGS.GUILD_MESSAGES,
-		Intents.FLAGS.GUILD_VOICE_STATES,
-		Intents.FLAGS.GUILD_PRESENCES
+		GatewayIntentBits.Guilds,
+		GatewayIntentBits.GuildMembers,
+		GatewayIntentBits.GuildMessages,
+		GatewayIntentBits.GuildVoiceStates,
+		GatewayIntentBits.GuildPresences,
+		GatewayIntentBits.MessageContent
 	]
 });
 
@@ -16,19 +17,20 @@ var queue = [];
 var currentSong = null;
 var replyChannel = null;
 let player = null;
+let voiceConnection = null;
 let volume = 0.10;
 let loopSong = false;
 let loopList = false;
 
 /*
 	Command.io TODO LIST:
-		- Upgrade again to DiscordJS 14
-		- Fix the bots Presence to show whats currently playing
+		- [DONE - 03/13/24] Upgrade again to DiscordJS 14
+		- [DONE - 03/13/24] Fix the bots Presence to show whats currently playing
 		- Add ability to give a folder and play all tracks in that folder
 		- Add Status command to display flags
 		- Add Summon Demon command to summon lesser demons from DND 5e
 		- Add Shuffle command to randomly select next song from playlist
-		- Add Leave command to send the bot out of the voice channel
+		- [DONE - 03/13/24] Add Leave command to send the bot out of the voice channel
 */
 
 client.login(auth.token);
@@ -52,7 +54,7 @@ client.on("messageCreate", async (message) => {
                 options: [
                     {
                         name: "query",
-                        type: "STRING",
+                        type: ApplicationCommandOptionType.String,
                         description: "The song you want to play",
                         required: true
                     }
@@ -89,7 +91,7 @@ client.on("messageCreate", async (message) => {
 				options: [
                     {
                         name: "dice",
-                        type: "STRING",
+                        type: ApplicationCommandOptionType.String,
                         description: "The amount and size of dice you want to roll: 1d4",
                         required: true
                     }
@@ -152,10 +154,14 @@ client.on("messageCreate", async (message) => {
 		});
 		
 		connection.subscribe(player);
+		voiceConnection = connection;
 	}
 	
 	if (message.content === "!leave" && message.author.id === client.application?.owner?.id) {
-		// TBD
+		voiceConnection.disconnect();
+		
+		let connectedVoiceAdapter = client.voice.adapters.get(message.guild.id)
+		connectedVoiceAdapter.destroy();
 	}
 });
 
@@ -194,12 +200,14 @@ client.on("interactionCreate", async (interaction) => {
 	if (interaction.commandName === 'pause') {
 		await interaction.deferReply();
 		player.pause();
+		client.user.setPresence({ activity: null });
 		return void interaction.followUp({ content: 'Paused music.', ephemeral: true });
 	}
 	
 	if (interaction.commandName === 'unpause') {
 		await interaction.deferReply();
 		player.unpause();
+		setBotPresence();
 		return void interaction.followUp({ content: 'Resuming music.', ephemeral: true });
 	}
 	
@@ -389,9 +397,19 @@ function handleRollCommand(diceArr) {
 	return followUpMessage;
 }
 
+function setBotPresence() {
+	let songNameArr = currentSong.split("/");
+	let prettySongName = songNameArr[songNameArr.length - 1];
+	
+	client.user.setPresence({
+		activities: [{ name: prettySongName, type: ActivityType.Playing }],
+		status: 'dnd',
+	});
+}
+
 function playSong(resource) {
 	player.play(resource);
-		
+	setBotPresence();
 	replyChannel.send(`Now playing: ${currentSong}!`);
 }
 
